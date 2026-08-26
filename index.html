@@ -127,6 +127,7 @@ function dateVal(r){const c=C.date,v=c?r[c]:null;return canonicalDate(v)}
 let dates=DATA.map(dateVal).filter(Boolean).sort(),minDate=dates[0]||'',maxDate=dates[dates.length-1]||'';from.min=minDate;from.max=maxDate;to.min=minDate;to.max=maxDate;from.min=minDate;from.max=maxDate;to.min=minDate;to.max=maxDate;from.value=minDate;to.value=maxDate;
 let selectedChannels=new Set(), selectedTrend=['spend'], activePreset='';
 let channelValues=[...new Set(DATA.map(r=>C.channel?r[C.channel]:null).filter(v=>v!==null&&v!==''))].map(String).sort();
+selectedChannels=new Set(channelValues);
 
 function parseCSV(text){
  const rows=[];let row=[],cell='',quoted=false;
@@ -182,6 +183,7 @@ function reconfigureData(){
  dates=DATA.map(dateVal).filter(Boolean).sort((a,b)=>a.localeCompare(b));
  minDate=dates[0]||'';maxDate=dates[dates.length-1]||'';from.min=minDate;from.max=maxDate;to.min=minDate;to.max=maxDate;
  channelValues=[...new Set(DATA.map(r=>C.channel?r[C.channel]:null).filter(v=>v!==null&&v!==''))].map(String).sort();
+selectedChannels=new Set(channelValues);
 }
 let gvizCallbackId=0;
 function loadGoogleSheetJSONP(){
@@ -227,7 +229,29 @@ async function loadGoogleSheet(manual=false){
    console.warn('Google Sheets refresh failed:',err);
  }
 }
-function buildChannels(){channels.innerHTML=channelValues.map(x=>`<span class="chip active" data-v="${encodeURIComponent(x)}">${x}</span>`).join('');channels.querySelectorAll('.chip').forEach(el=>el.onclick=()=>{const x=decodeURIComponent(el.dataset.v);if(selectedChannels.has(x))selectedChannels.delete(x);else selectedChannels.add(x);el.classList.toggle('active');render()})}buildChannels();
+function buildChannels(){
+ channels.innerHTML=channelValues.map(x=>`<span class="chip ${selectedChannels.has(x)?'active':''}" data-v="${encodeURIComponent(x)}">${x}</span>`).join('');
+ channels.querySelectorAll('.chip').forEach(el=>el.onclick=()=>{
+   const x=decodeURIComponent(el.dataset.v);
+   const allSelected=selectedChannels.size===channelValues.length;
+   const onlyThis=selectedChannels.size===1 && selectedChannels.has(x);
+   if(allSelected){
+     // First click from the all-channel state isolates the clicked channel.
+     selectedChannels=new Set([x]);
+   }else if(selectedChannels.has(x) && selectedChannels.size>1){
+     // Clicking an active channel while multiple are selected isolates it.
+     selectedChannels=new Set([x]);
+   }else if(onlyThis){
+     // Clicking the only active channel again restores all channels.
+     selectedChannels=new Set(channelValues);
+   }else{
+     // Clicking an inactive channel adds it to the current selection.
+     selectedChannels.add(x);
+   }
+   channels.querySelectorAll('.chip').forEach(ch=>ch.classList.toggle('active',selectedChannels.has(decodeURIComponent(ch.dataset.v))));
+   render();
+ })
+}buildChannels();
 function setPresetActive(el){document.querySelectorAll('.presets button').forEach(b=>b.classList.remove('active'));if(el)el.classList.add('active')}
 function shiftDateString(s,days){
  const [y,m,d]=s.split('-').map(Number),dt=new Date(y,m-1,d);
@@ -261,7 +285,7 @@ function rowsFor(a,b){
  });
 }
 function filtered(){return rowsFor(from.value,to.value)}
-function sum(rows,k){return rows.reduce((s,r)=>s+val(r,k),0)}function money(n){return 'Rp '+Math.round(n).toLocaleString('id-ID')}function num(n){return Math.round(n).toLocaleString('id-ID')}function pct(n){return (n*100).toFixed(2)+'%'}function ratio(a,b){return b?a/b:0}
+function sum(rows,k){return rows.reduce((s,r)=>s+val(r,k),0)}function money(n){return 'Rp '+Math.round(n).toLocaleString('id-ID')}function num(n){return Math.round(n).toLocaleString('en-US')}function pct(n){return (n*100).toFixed(2)+'%'}function ratio(a,b){return b?a/b:0}
 const metricDefs=[
  ['spend','Spend',''],
  ['clicks','Clicks',''],
@@ -292,7 +316,9 @@ function calc(rows,key){
  }[key]||0;
 }
 function fmtMetric(key,v){
- return ['ctr','install','incoming','activations','alphaRate'].includes(key)?pct(v):money(v);
+ if(['clicks','installs','incomingRaw','activationsRaw','alphaRaw','impressions'].includes(key)) return num(v);
+ if(['ctr','install','incoming','activations','alphaRate'].includes(key)) return pct(v);
+ return money(v);
 }
 function previousRows(){const a=from.value,b=to.value;if(!a||!b)return [];const ad=new Date(a),bd=new Date(b);if(activePreset==='month'){const pEnd=new Date(ad.getFullYear(),ad.getMonth(),0),pStart=new Date(ad.getFullYear(),ad.getMonth()-1,1);return rowsFor(pStart.toISOString().slice(0,10),pEnd.toISOString().slice(0,10))}const days=Math.round((bd-ad)/86400000)+1,pEnd=new Date(ad);pEnd.setDate(ad.getDate()-1);const pStart=new Date(pEnd);pStart.setDate(pEnd.getDate()-days+1);return rowsFor(pStart.toISOString().slice(0,10),pEnd.toISOString().slice(0,10))}
 function comparisonLabel(){if(activePreset==='month')return 'vs previous month';if(typeof activePreset==='number')return `vs previous ${activePreset} days`;return 'vs previous period'}
