@@ -101,6 +101,7 @@ tr:hover td{background:#fbfdfc}
     <button data-preset="month">Last Month</button>
   </div></div>
   <div class="field"><label>CHANNEL — MULTI SELECT</label><div id="channels" class="channels"></div></div>
+  <div class="field"><label>CREATIVE FORMAT — MULTI SELECT</label><div id="formats" class="channels"></div></div>
 </section>
 
 <section class="kpis" id="kpis"></section>
@@ -178,8 +179,9 @@ function lastMonthRange(maxIso){
 function getFiltered(){
   const from=document.getElementById('dateFrom').value;
   const to=document.getElementById('dateTo').value;
-  const selected=[...document.querySelectorAll('.chip.active')].map(x=>x.dataset.channel);
-  return CREATIVE_DATA.filter(r=>r.date>=from&&r.date<=to&&(!selected.length||selected.includes(r.channels)));
+  const selectedChannels=[...document.querySelectorAll('#channels .chip.active')].map(x=>x.dataset.channel);
+  const selectedFormats=[...document.querySelectorAll('#formats .chip.active')].map(x=>x.dataset.format);
+  return CREATIVE_DATA.filter(r=>r.date>=from&&r.date<=to&&(!selectedChannels.length||selectedChannels.includes(r.channels))&&(!selectedFormats.length||selectedFormats.includes(r.format)));
 }
 function aggregate(rows){
   const map=new Map();
@@ -195,7 +197,7 @@ function aggregate(rows){
 
 const GOOGLE_SHEET_ID='1Ee_J1JEsbl4ipvuil8UEQe9GBvuqZ6IQ55ASky2DBjo';
 const CREATIVE_SHEET_GVIZ='https://docs.google.com/spreadsheets/d/'+GOOGLE_SHEET_ID+'/gviz/tq';
-const CREATIVE_SHEET_QUERY="select C,D,F,G,H,I,J,K format C 'yyyy-MM-dd'";
+const CREATIVE_SHEET_QUERY="select C,D,F,G,H,I,J,K,O format C 'yyyy-MM-dd'";
 let creativeGvizCallbackId=0;
 
 function parseCreativeGviz(payload){
@@ -221,7 +223,8 @@ function parseCreativeGviz(payload){
       incoming:Number(val(4))||0,
       alpha:Number(val(5))||0,
       creditlimit:Number(val(6))||0,
-      avgcreditlimit:(val(7)===''||val(7)===null||val(7)===undefined)?null:(Number(val(7))||0)
+      avgcreditlimit:(val(7)===''||val(7)===null||val(7)===undefined)?null:(Number(val(7))||0),
+      format:String(val(8)||'').trim()
     };
     if(rec.date && (rec.channels||rec.creative||rec.cost||rec.incoming||rec.alpha||rec.creditlimit||rec.avgcreditlimit!==null)) out.push(rec);
   }
@@ -255,6 +258,7 @@ async function loadCreativeGoogleSheet(manual=false){
     if(!fresh.length) throw new Error('No Sheet4 rows returned from Google Sheets');
     CREATIVE_DATA=fresh;
     setupChannels();
+    setupFormats();
     setupDates();
     render();
     status.className='data-status live';
@@ -270,6 +274,12 @@ function setupChannels(){
   const vals=[...new Set(CREATIVE_DATA.map(r=>r.channels).filter(Boolean))].sort();
   const box=document.getElementById('channels');
   box.innerHTML=vals.map(c=>`<button class="chip" data-channel="${c.replace(/"/g,'&quot;')}">${c}</button>`).join('');
+  box.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{b.classList.toggle('active');render();});
+}
+function setupFormats(){
+  const vals=[...new Set(CREATIVE_DATA.map(r=>r.format).filter(Boolean))].sort();
+  const box=document.getElementById('formats');
+  box.innerHTML=vals.map(f=>`<button class="chip" data-format="${f.replace(/"/g,'&quot;')}">${f}</button>`).join('');
   box.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{b.classList.toggle('active');render();});
 }
 function setupDates(){
@@ -343,7 +353,7 @@ function render(){
   renderKpis(filtered); renderTop(agg); renderChannel(filtered); renderTable(agg);
   rangeText.textContent=`${filtered.length.toLocaleString()} matching rows • ${dateFrom.value} → ${dateTo.value}`;
 }
-setupChannels(); setupDates(); setupMetric(); render();
+setupChannels(); setupFormats(); setupDates(); setupMetric(); render();
 loadCreativeGoogleSheet(false);
 </script>
 </body></html>
