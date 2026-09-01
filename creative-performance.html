@@ -1,10 +1,6 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta name="theme-color" content="#ffffff">
-<link rel="icon" type="image/png" sizes="64x64" href="allobank-favicon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="allobank-favicon-32.png">
-<link rel="apple-touch-icon" href="allobank-favicon.png">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Creative Performance Dashboard</title>
@@ -103,6 +99,7 @@ tr:hover td{background:#fbfdfc}
     <button data-preset="14">Last 14 Days</button>
     <button data-preset="30">Last 30 Days</button>
     <button data-preset="month">Last Month</button>
+    <button data-preset="mtd">MTD</button>
   </div></div>
   <div class="field"><label>CHANNEL — MULTI SELECT</label><div id="channels" class="channels"></div></div>
   <div class="field"><label>CREATIVE FORMAT — MULTI SELECT</label><div id="formats" class="channels"></div></div>
@@ -294,6 +291,11 @@ function setupDates(){
   document.querySelectorAll('[data-preset]').forEach(btn=>btn.onclick=()=>{
     document.querySelectorAll('[data-preset]').forEach(x=>x.classList.remove('active'));btn.classList.add('active');
     if(btn.dataset.preset==='month'){[dateFrom.value,dateTo.value]=lastMonthRange(max);}
+    else if(btn.dataset.preset==='mtd'){
+      const now=new Date(), first=new Date(now.getFullYear(),now.getMonth(),1), yesterday=new Date(now.getFullYear(),now.getMonth(),now.getDate()-1);
+      const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      const yesterdayIso=iso(yesterday); dateFrom.value=iso(first); dateTo.value=yesterdayIso<=max?yesterdayIso:max;
+    }
     else {dateTo.value=max;dateFrom.value=addDays(max,-(Number(btn.dataset.preset)-1));}
     render();
   });

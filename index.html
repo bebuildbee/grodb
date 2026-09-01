@@ -1,9 +1,5 @@
 <!doctype html>
-<html lang="en"><head>
-<meta name="theme-color" content="#ffffff">
-<link rel="icon" type="image/png" sizes="64x64" href="allobank-favicon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="allobank-favicon-32.png">
-<link rel="apple-touch-icon" href="allobank-favicon.png"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Performance Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
@@ -75,7 +71,7 @@ body,input,select,button{font-family:Satoshi,Arial,sans-serif}
     </div></header>
 <section class="filters">
 <div class="field"><label>DATE FROM</label><input id="from" type="date"></div><div class="field"><label>DATE TO</label><input id="to" type="date"><div id="dateFilterStatus" class="filter-status"></div></div>
-<div class="field"><label>PRE-DEFINED RANGE</label><div class="presets"><button data-preset="7" onclick="preset(7,this)">Last 7 Days</button><button data-preset="14" onclick="preset(14,this)">Last 14 Days</button><button data-preset="30" onclick="preset(30,this)">Last 30 Days</button><button data-preset="month" onclick="lastMonth(this)">Last Month</button></div></div>
+<div class="field"><label>PRE-DEFINED RANGE</label><div class="presets"><button data-preset="7" onclick="preset(7,this)">Last 7 Days</button><button data-preset="14" onclick="preset(14,this)">Last 14 Days</button><button data-preset="30" onclick="preset(30,this)">Last 30 Days</button><button data-preset="month" onclick="lastMonth(this)">Last Month</button><button data-preset="mtd" onclick="mtd(this)">MTD</button></div></div>
 <div class="field"><label>CHANNEL — MULTI SELECT</label><div id="channels" class="channels"></div></div></section>
 <section class="kpis" id="kpis"></section>
 <section class="cards-extra" id="extraCards"></section>
@@ -273,6 +269,13 @@ function lastMonth(el){
  const ls=last.getFullYear()+'-'+String(last.getMonth()+1).padStart(2,'0')+'-'+String(last.getDate()).padStart(2,'0');
  from.value=fs;to.value=ls;activePreset='month';setPresetActive(el);render();
 }
+function mtd(el){
+ const now=new Date(),y=now.getFullYear(),m=now.getMonth();
+ const first=new Date(y,m,1),yesterday=new Date(y,m,now.getDate()-1);
+ const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+ const yIso=iso(yesterday),endIso=(maxDate&&maxDate<yIso)?maxDate:yIso;
+ from.value=iso(first);to.value=endIso;activePreset='mtd';setPresetActive(el);render();
+}
 function applyDateInputs(){
  let a=from.value,b=to.value;
  if(a&&b&&a>b){const x=a;a=b;b=x;from.value=a;to.value=b}
@@ -324,8 +327,7 @@ function fmtMetric(key,v){
  if(['ctr','install','incoming','activations','alphaRate'].includes(key)) return pct(v);
  return money(v);
 }
-function previousRows(){const a=from.value,b=to.value;if(!a||!b)return [];const ad=new Date(a),bd=new Date(b);if(activePreset==='month'){const pEnd=new Date(ad.getFullYear(),ad.getMonth(),0),pStart=new Date(ad.getFullYear(),ad.getMonth()-1,1);return rowsFor(pStart.toISOString().slice(0,10),pEnd.toISOString().slice(0,10))}const days=Math.round((bd-ad)/86400000)+1,pEnd=new Date(ad);pEnd.setDate(ad.getDate()-1);const pStart=new Date(pEnd);pStart.setDate(pEnd.getDate()-days+1);return rowsFor(pStart.toISOString().slice(0,10),pEnd.toISOString().slice(0,10))}
-function comparisonLabel(){if(activePreset==='month')return 'vs previous month';if(typeof activePreset==='number')return `vs previous ${activePreset} days`;return 'vs previous period'}
+function previousRows(){const a=from.value,b=to.value;if(!a||!b)return [];const ad=new Date(a),bd=new Date(b);if(activePreset==='month'){const pEnd=new Date(ad.getFullYear(),ad.getMonth(),0),pStart=new Date(ad.getFullYear(),ad.getMonth()-1,1);return rowsFor(pStart.toISOString().slice(0,10),pEnd.toISOString().slice(0,10))}if(activePreset==='mtd'){const days=Math.max(0,Math.round((bd-ad)/86400000)+1);if(!days)return [];const pStart=new Date(ad.getFullYear(),ad.getMonth()-1,1),lastDayPrev=new Date(ad.getFullYear(),ad.getMonth(),0).getDate(),pEnd=new Date(ad.getFullYear(),ad.getMonth()-1,Math.min(days,lastDayPrev));return rowsFor(pStart.toISOString().slice(0,10),pEnd.toISOString().slice(0,10))}const days=Math.round((bd-ad)/86400000)+1,pEnd=new Date(ad);pEnd.setDate(ad.getDate()-1);const pStart=new Date(pEnd);pStart.setDate(pEnd.getDate()-days+1);return rowsFor(pStart.toISOString().slice(0,10),pEnd.toISOString().slice(0,10))} function comparisonLabel(){if(activePreset==='month')return 'vs previous month';if(activePreset==='mtd')return 'vs same period last month';if(typeof activePreset==='number')return `vs previous ${activePreset} days`;return 'vs previous period'}
 let charts={};function destroy(n){if(charts[n])charts[n].destroy()}
 function renderKpis(rows){
  const prev=previousRows(),label=comparisonLabel();
