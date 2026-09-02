@@ -23,7 +23,7 @@ header{display:flex;justify-content:space-between;align-items:end;gap:20px;margi
 .channels{display:flex;gap:6px;flex-wrap:wrap;max-height:40px;overflow:auto}.chip{border:1px solid #d5dde1;border-radius:999px;padding:7px 9px;font-size:11px;cursor:pointer;background:#fff;white-space:nowrap}.chip.active{background:var(--navy);color:#fff;border-color:var(--navy)}
 .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}.kpi{background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px;box-shadow:0 4px 15px #0230470a;cursor:pointer;transition:.16s;min-width:0}.kpi:hover{transform:translateY(-2px);box-shadow:0 7px 20px #02304715}.kpi.selected{border:2px solid var(--navy);padding:14px;background:#fbfdfc}.kpi .label{color:#667085;font-size:12px;font-weight:800}.kpi .value{font-size:23px;line-height:1.15;font-weight:900;color:#073b56;margin-top:7px;word-break:break-word}.kpi .formula{font-size:10px;color:#98a2b3;margin-top:6px}.change{font-size:10px;font-weight:800;margin-top:7px;min-height:14px}.up{color:#167a5a}.down{color:#d45b3b}.flat{color:#8a94a6}
 .grid{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;margin-bottom:16px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px;box-shadow:0 4px 15px #0230470a}.card h3{font-size:15px;color:var(--navy);margin:0}.cardhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.chartbox{height:350px}.chartbox canvas{width:100%!important;height:100%!important}
-.metric-filter{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.metric-chip{border:1px solid #d5dde1;border-radius:999px;padding:5px 8px;background:#fff;color:#667085;font-size:10px;font-weight:800;cursor:pointer}.metric-chip.active{background:var(--mint);color:var(--navy);border-color:var(--mint)}
+.metric-filter{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}#channelMetric{width:auto;min-width:120px;height:32px;font-size:11px;font-weight:800;color:var(--navy);padding:0 9px}.metric-chip{border:1px solid #d5dde1;border-radius:999px;padding:5px 8px;background:#fff;color:#667085;font-size:10px;font-weight:800;cursor:pointer}.metric-chip.active{background:var(--mint);color:var(--navy);border-color:var(--mint)}
 .tablewrap{overflow:auto;max-height:450px}.table{width:100%;border-collapse:collapse;font-size:12px}.table th{position:sticky;top:0;background:var(--navy);color:#fff;padding:9px;text-align:left}.table td{padding:8px 9px;border-bottom:1px solid var(--line);white-space:nowrap}.table tr:hover td{background:#f7faf9}.note{font-size:10px;color:var(--muted);margin-top:9px}
 @media(max-width:1150px){.kpis{grid-template-columns:repeat(3,1fr)}.filters{grid-template-columns:1fr 1fr}.grid,.grid3{grid-template-columns:1fr}}@media(max-width:680px){.wrap{padding:12px}.kpis{grid-template-columns:1fr 1fr}.filters{grid-template-columns:1fr}header{display:block}.cardhead{align-items:flex-start;flex-direction:column}.metric-filter{justify-content:flex-start}}
 
@@ -71,13 +71,13 @@ body,input,select,button{font-family:Satoshi,Arial,sans-serif}
     </div></header>
 <section class="filters">
 <div class="field"><label>DATE FROM</label><input id="from" type="date"></div><div class="field"><label>DATE TO</label><input id="to" type="date"><div id="dateFilterStatus" class="filter-status"></div></div>
-<div class="field"><label>PRE-DEFINED RANGE</label><div class="presets"><button data-preset="7" onclick="preset(7,this)">Last 7 Days</button><button data-preset="14" onclick="preset(14,this)">Last 14 Days</button><button data-preset="30" onclick="preset(30,this)">Last 30 Days</button><button data-preset="month" onclick="lastMonth(this)">Last Month</button><button data-preset="mtd" onclick="mtd(this)">MTD</button></div></div>
+<div class="field"><label>PRE-DEFINED RANGE</label><div class="presets"><button data-preset="7" onclick="preset(7,this)">Last 7 Days</button><button data-preset="14" onclick="preset(14,this)">Last 14 Days</button><button data-preset="30" onclick="preset(30,this)">Last 30 Days</button><button data-preset="month" onclick="lastMonth(this)">Last Month</button></div></div>
 <div class="field"><label>CHANNEL — MULTI SELECT</label><div id="channels" class="channels"></div></div></section>
 <section class="kpis" id="kpis"></section>
 <section class="cards-extra" id="extraCards"></section>
 <div class="more-data-wrap"><button class="more-data-btn" id="moreDataBtn" onclick="toggleMoreData()">Choose more data</button></div>
 <section class="grid"><div class="card"><div class="cardhead"><div><h3 id="dailyTitle">Daily Performance — Spend</h3><div class="sub">Click 1 KPI for primary or 2 KPIs for primary + secondary</div></div></div><div class="chartbox"><canvas id="trend"></canvas></div></div>
-<div class="card"><div class="cardhead"><h3>Spend by Channel</h3></div><div class="chartbox"><canvas id="channel"></canvas></div></div></section>
+<div class="card"><div class="cardhead"><h3 id="channelTitle">Share of Spend by Channel</h3><select id="channelMetric" aria-label="Metric for channel share"></select></div><div class="chartbox"><canvas id="channel"></canvas></div></div></section>
 <section class="grid3">
 <div class="card"><div class="cardhead"><h3>Funnel</h3><div id="funnelFilter" class="metric-filter"></div></div><div class="chartbox"><canvas id="funnel"></canvas></div></div>
 <div class="card"><div class="cardhead"><h3>Efficiency Metrics</h3><div id="effFilter" class="metric-filter"></div></div><div class="chartbox"><canvas id="efficiency"></canvas></div></div>
@@ -269,13 +269,6 @@ function lastMonth(el){
  const ls=last.getFullYear()+'-'+String(last.getMonth()+1).padStart(2,'0')+'-'+String(last.getDate()).padStart(2,'0');
  from.value=fs;to.value=ls;activePreset='month';setPresetActive(el);render();
 }
-function mtd(el){
- const now=new Date(),y=now.getFullYear(),m=now.getMonth();
- const first=new Date(y,m,1),yesterday=new Date(y,m,now.getDate()-1);
- const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
- const yIso=iso(yesterday),endIso=(maxDate&&maxDate<yIso)?maxDate:yIso;
- from.value=iso(first);to.value=endIso;activePreset='mtd';setPresetActive(el);render();
-}
 function applyDateInputs(){
  let a=from.value,b=to.value;
  if(a&&b&&a>b){const x=a;a=b;b=x;from.value=a;to.value=b}
@@ -327,7 +320,8 @@ function fmtMetric(key,v){
  if(['ctr','install','incoming','activations','alphaRate'].includes(key)) return pct(v);
  return money(v);
 }
-function previousRows(){const a=from.value,b=to.value;if(!a||!b)return [];const ad=new Date(a),bd=new Date(b);if(activePreset==='month'){const pEnd=new Date(ad.getFullYear(),ad.getMonth(),0),pStart=new Date(ad.getFullYear(),ad.getMonth()-1,1);return rowsFor(pStart.toISOString().slice(0,10),pEnd.toISOString().slice(0,10))}if(activePreset==='mtd'){const days=Math.max(0,Math.round((bd-ad)/86400000)+1);if(!days)return [];const pStart=new Date(ad.getFullYear(),ad.getMonth()-1,1),lastDayPrev=new Date(ad.getFullYear(),ad.getMonth(),0).getDate(),pEnd=new Date(ad.getFullYear(),ad.getMonth()-1,Math.min(days,lastDayPrev));return rowsFor(pStart.toISOString().slice(0,10),pEnd.toISOString().slice(0,10))}const days=Math.round((bd-ad)/86400000)+1,pEnd=new Date(ad);pEnd.setDate(ad.getDate()-1);const pStart=new Date(pEnd);pStart.setDate(pEnd.getDate()-days+1);return rowsFor(pStart.toISOString().slice(0,10),pEnd.toISOString().slice(0,10))} function comparisonLabel(){if(activePreset==='month')return 'vs previous month';if(activePreset==='mtd')return 'vs same period last month';if(typeof activePreset==='number')return `vs previous ${activePreset} days`;return 'vs previous period'}
+function previousRows(){const a=from.value,b=to.value;if(!a||!b)return [];const ad=new Date(a),bd=new Date(b);if(activePreset==='month'){const pEnd=new Date(ad.getFullYear(),ad.getMonth(),0),pStart=new Date(ad.getFullYear(),ad.getMonth()-1,1);return rowsFor(pStart.toISOString().slice(0,10),pEnd.toISOString().slice(0,10))}const days=Math.round((bd-ad)/86400000)+1,pEnd=new Date(ad);pEnd.setDate(ad.getDate()-1);const pStart=new Date(pEnd);pStart.setDate(pEnd.getDate()-days+1);return rowsFor(pStart.toISOString().slice(0,10),pEnd.toISOString().slice(0,10))}
+function comparisonLabel(){if(activePreset==='month')return 'vs previous month';if(typeof activePreset==='number')return `vs previous ${activePreset} days`;return 'vs previous period'}
 let charts={};function destroy(n){if(charts[n])charts[n].destroy()}
 function renderKpis(rows){
  const prev=previousRows(),label=comparisonLabel();
@@ -392,7 +386,32 @@ function renderTrend(rows){
    }
  });
 }
-function renderChannel(rows){const byCh={};rows.forEach(r=>{const c=C.channel?String(r[C.channel]??'Unknown'):'Unknown';byCh[c]=(byCh[c]||0)+val(r,'spend')});const labels=Object.keys(byCh).sort((a,b)=>byCh[b]-byCh[a]);destroy('channel');charts.channel=new Chart(document.getElementById('channel'),{type:'doughnut',data:{labels,datasets:[{data:labels.map(x=>byCh[x]),backgroundColor:['#023047','#cadfd8','#f9ca67','#ffaf03','#f38000','#333333'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}})}
+const channelShareMetrics=[...metricDefs];
+const channelColors=['#023047','#cadfd8','#f9ca67','#ffaf03','#f38000','#333333'];
+let channelMetric='spend';
+function setupChannelMetric(){
+  const sel=document.getElementById('channelMetric');
+  if(!sel)return;
+  sel.innerHTML=channelShareMetrics.map(([k,n])=>`<option value="${k}">${n}</option>`).join('');
+  sel.value=channelMetric;
+  sel.onchange=()=>{channelMetric=sel.value;renderChannel(filtered());};
+}
+setupChannelMetric();
+function renderChannel(rows){
+  const metric=channelShareMetrics.find(x=>x[0]===channelMetric)||channelShareMetrics[0];
+  const key=metric[0],name=metric[1];
+  document.getElementById('channelTitle').textContent=`Share of ${name} by Channel`;
+  const byCh={};
+  rows.forEach(r=>{const c=C.channel?String(r[C.channel]??'Unknown'):'Unknown';byCh[c]=(byCh[c]||0)+calc([r],key)});
+  const entries=Object.entries(byCh).filter(([,v])=>Number.isFinite(v)&&v!==0).sort((a,b)=>b[1]-a[1]);
+  const labels=entries.map(x=>x[0]), values=entries.map(x=>x[1]), total=values.reduce((a,b)=>a+b,0);
+  destroy('channel');
+  charts.channel=new Chart(document.getElementById('channel'),{
+    type:'doughnut',
+    data:{labels,datasets:[{data:values,backgroundColor:labels.map((_,i)=>channelColors[i%channelColors.length]),borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>{const v=Number(c.raw)||0;const share=total?((v/total)*100).toFixed(1):'0.0';return `${c.label}: ${fmtMetric(key,v)} (${share}%)`;}}}}}
+  });
+}
 const funnelDefs=[['impressions','Impressions'],['clicks','Clicks'],['installs','Installs'],['incoming','Incoming'],['activations','Activations'],['alpha','Alpha']];let funnelSel=new Set(funnelDefs.map(x=>x[0]));const effDefs=[['cpm','CPM'],['cpc','CPC'],['cpi','CPI'],['cpIncoming','CP Incoming'],['cpActivations','CP Activations'],['cpAlpha','CP Alpha']];let effSel=new Set(effDefs.map(x=>x[0]));const rateDefs=[['ctr','CTR'],['install','Install%'],['incoming','Incoming%'],['activations','Activations%'],['alphaRate','Alpha%']];let rateSel=new Set(rateDefs.map(x=>x[0]));
 function filterUI(id,defs,set){document.getElementById(id).innerHTML=defs.map(([k,n])=>`<span class="metric-chip ${set.has(k)?'active':''}" onclick="toggleMetric('${id}','${k}')">${n}</span>`).join('')}
 function toggleMetric(id,k){const s=id==='funnelFilter'?funnelSel:id==='effFilter'?effSel:rateSel;if(s.has(k)){if(s.size===1)return;s.delete(k)}else s.add(k);renderCharts(filtered());}
