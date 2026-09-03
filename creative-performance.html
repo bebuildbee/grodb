@@ -105,6 +105,7 @@ tr:hover td{background:#fbfdfc}
     <button data-preset="30">Last 30 Days</button>
     <button data-preset="month">Last Month</button>
     <button data-preset="mtd">MTD</button>
+    <button data-preset="ytd">YTD</button>
   </div></div>
   <div class="field"><label>CHANNEL — MULTI SELECT</label><div id="channels" class="channels"></div></div>
   <div class="field"><label>CREATIVE FORMAT — MULTI SELECT</label><div id="formats" class="channels"></div></div>
@@ -300,6 +301,10 @@ function setupDates(){
       const now=new Date(), first=new Date(now.getFullYear(),now.getMonth(),1), yesterday=new Date(now.getFullYear(),now.getMonth(),now.getDate()-1);
       const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
       const yesterdayIso=iso(yesterday); dateFrom.value=iso(first); dateTo.value=yesterdayIso<=max?yesterdayIso:max;
+    }
+    else if(btn.dataset.preset==='ytd'){
+      const year=Number(String(max).slice(0,4));
+      dateFrom.value=`${year}-01-01`; dateTo.value=max;
     }
     else {dateTo.value=max;dateFrom.value=addDays(max,-(Number(btn.dataset.preset)-1));}
     render();

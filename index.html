@@ -75,7 +75,7 @@ body,input,select,button{font-family:Satoshi,Arial,sans-serif}
     </div></header>
 <section class="filters">
 <div class="field"><label>DATE FROM</label><input id="from" type="date"></div><div class="field"><label>DATE TO</label><input id="to" type="date"><div id="dateFilterStatus" class="filter-status"></div></div>
-<div class="field"><label>PRE-DEFINED RANGE</label><div class="presets"><button data-preset="7" onclick="preset(7,this)">Last 7 Days</button><button data-preset="14" onclick="preset(14,this)">Last 14 Days</button><button data-preset="30" onclick="preset(30,this)">Last 30 Days</button><button data-preset="month" onclick="lastMonth(this)">Last Month</button><button data-preset="mtd" onclick="mtd(this)">MTD</button></div></div>
+<div class="field"><label>PRE-DEFINED RANGE</label><div class="presets"><button data-preset="7" onclick="preset(7,this)">Last 7 Days</button><button data-preset="14" onclick="preset(14,this)">Last 14 Days</button><button data-preset="30" onclick="preset(30,this)">Last 30 Days</button><button data-preset="month" onclick="lastMonth(this)">Last Month</button><button data-preset="mtd" onclick="mtd(this)">MTD</button><button data-preset="ytd" onclick="ytd(this)">YTD</button></div></div>
 <div class="field"><label>CHANNEL — MULTI SELECT</label><div id="channels" class="channels"></div></div></section>
 <section class="kpis" id="kpis"></section>
 <section class="cards-extra" id="extraCards"></section>
@@ -279,6 +279,11 @@ function mtd(el){
  const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
  const yIso=iso(yesterday),endIso=(maxDate&&maxDate<yIso)?maxDate:yIso;
  from.value=iso(first);to.value=endIso;activePreset='mtd';setPresetActive(el);render();
+}
+function ytd(el){
+ const end=maxDate||canonicalDate(new Date());
+ const y=Number(String(end).slice(0,4));
+ from.value=`${y}-01-01`;to.value=end;activePreset='ytd';setPresetActive(el);render();
 }
 function applyDateInputs(){
  let a=from.value,b=to.value;
