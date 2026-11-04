@@ -86,7 +86,7 @@ body,input,select,button{font-family:Satoshi,Arial,sans-serif}
 <div class="card"><div class="cardhead"><h3>Funnel</h3><div id="funnelFilter" class="metric-filter"></div></div><div class="chartbox"><canvas id="funnel"></canvas></div></div>
 <div class="card"><div class="cardhead"><h3>Efficiency Metrics</h3><div id="effFilter" class="metric-filter"></div></div><div class="chartbox"><canvas id="efficiency"></canvas></div></div>
 <div class="card"><div class="cardhead"><h3>Conversion Rates</h3><div id="rateFilter" class="metric-filter"></div></div><div class="chartbox"><canvas id="rates"></canvas></div></div></section>
-<section class="card"><h3>Filtered Data</h3><div class="note">Click any column header to sort low → high or high → low.</div><div class="tablewrap"><table class="table"><thead id="thead"></thead><tbody id="tbody"></tbody></table></div><div class="note">CPM = Spend / Impressions × 1,000 · CPC = Spend / Clicks · CPI = Spend / Installs · CP Incoming = Spend / Incoming · CP Activations = Spend / Activations · CP Alpha = Spend / Alpha · Avg. Creditlimit = Creditlimit / Activations · CPCL = Cost / Creditlimit · Avg. Disbursement = Disbursement / Activations · CPD = Cost / Disbursement · CTR = Clicks / Impressions · Install% = Installs / Clicks · Incoming% = Incoming / Installs · Activations% = Activations / Incoming · Alpha% = Alpha / Incoming.</div></section>
+<section class="card"><div class="cardhead xlsx-head"><h3>Filtered Data</h3><button type="button" id="xlsxExportBtn" class="png-export-btn" title="Download the filtered table as Excel (.xlsx)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>XLSX</button></div><div class="note">Click any column header to sort low → high or high → low.</div><div class="tablewrap"><table class="table"><thead id="thead"></thead><tbody id="tbody"></tbody></table></div><div class="note">CPM = Spend / Impressions × 1,000 · CPC = Spend / Clicks · CPI = Spend / Installs · CP Incoming = Spend / Incoming · CP Activations = Spend / Activations · CP Alpha = Spend / Alpha · Avg. Creditlimit = Creditlimit / Activations · CPCL = Cost / Creditlimit · Avg. Disbursement = Disbursement / Activations · CPD = Cost / Disbursement · CTR = Clicks / Impressions · Install% = Installs / Clicks · Incoming% = Incoming / Installs · Activations% = Activations / Incoming · Alpha% = Alpha / Incoming.</div></section>
 </div>
 <script>
 const GOOGLE_SHEET_ID='1Ee_J1JEsbl4ipvuil8UEQe9GBvuqZ6IQ55ASky2DBjo';
@@ -496,7 +496,7 @@ function sortTableBy(i){
  else{tableSort.index=i;tableSort.dir=1}
  renderTable(lastFilteredRows);
 }
-let lastFilteredRows=[];
+let lastFilteredRows=[];let lastDisplayRows=[];
 function renderTable(rows){
  lastFilteredRows=rows.slice();
  let display=rows.slice();
@@ -516,7 +516,7 @@ function renderTable(rows){
    const arrow=active?(tableSort.dir===1?'▲':'▼'):'↕';
    return `<th class="${active?'sort-active':''}" onclick="sortTableBy(${i})">${c}<span class="sort-indicator">${arrow}</span></th>`;
  }).join('')+'</tr>';
- tbody.innerHTML=display.map(r=>'<tr>'+COLS.map(c=>`<td>${formatTableValue(c,r[c])}</td>`).join('')+'</tr>').join('');
+ lastDisplayRows=display;tbody.innerHTML=display.map(r=>'<tr>'+COLS.map(c=>`<td>${formatTableValue(c,r[c])}</td>`).join('')+'</tr>').join('');
 }
 function render(){
  const rows=filtered(),sp=sum(rows,'spend');
@@ -581,6 +581,61 @@ loadGoogleSheet(false);
     });
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',addButtons);else addButtons();
+})();
+</script>
+<style>.xlsx-head{flex-direction:row!important;align-items:center!important;margin-bottom:4px}</style>
+<script>
+/* Download the Filtered Data table (current filters + sort) as .xlsx */
+(function(){
+  var loading=null;
+  function loadXLSX(){
+    if(window.XLSX)return Promise.resolve(window.XLSX);
+    if(loading)return loading;
+    loading=new Promise(function(res,rej){
+      var sc=document.createElement('script');
+      sc.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+      sc.onload=function(){res(window.XLSX)};
+      sc.onerror=function(){loading=null;rej(new Error('Could not load the Excel library'))};
+      document.head.appendChild(sc);
+    });
+    return loading;
+  }
+  function cellValue(c,v){
+    if(v===null||v===undefined||v==='')return null;
+    var type=tableColumnType(c);
+    if(type==='date'){var d=new Date(v);return isNaN(d)?String(v):d.toISOString().slice(0,10)}
+    if(type==='text')return String(v);
+    var raw=typeof v==='string'?v.replace(/[^0-9.-]/g,''):v;
+    var n=Number(raw);return Number.isFinite(n)?n:String(v);
+  }
+  function exportXlsx(){
+    var btn=document.getElementById('xlsxExportBtn');
+    var rows=lastDisplayRows&&lastDisplayRows.length?lastDisplayRows:lastFilteredRows;
+    if(!rows||!rows.length){alert('No rows to export for the current filters.');return}
+    var old=btn.lastChild.textContent;btn.lastChild.textContent='…';btn.disabled=true;
+    loadXLSX().then(function(XLSX){
+      var aoa=[COLS.slice()];
+      rows.forEach(function(r){aoa.push(COLS.map(function(c){return cellValue(c,r[c])}))});
+      var ws=XLSX.utils.aoa_to_sheet(aoa);
+      var range=XLSX.utils.decode_range(ws['!ref']);
+      for(var C=0;C<=range.e.c;C++){
+        var type=tableColumnType(COLS[C]);
+        for(var R=1;R<=range.e.r;R++){
+          var cell=ws[XLSX.utils.encode_cell({r:R,c:C})];
+          if(cell&&cell.t==='n')cell.z=(type==='money')?'"Rp"#,##0':'#,##0';
+        }
+      }
+      ws['!cols']=COLS.map(function(c){return {wch:Math.max(12,String(c).length+2)}});
+      ws['!freeze']={xSplit:0,ySplit:1};
+      var wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,'Filtered Data');
+      var f=document.getElementById('from'),t=document.getElementById('to');
+      var name='filtered-data'+(f&&f.value?'_'+f.value:'')+(t&&t.value?'_to_'+t.value:'')+'.xlsx';
+      XLSX.writeFile(wb,name);
+    }).catch(function(e){alert(e.message)}).finally(function(){btn.lastChild.textContent=old;btn.disabled=false});
+  }
+  function bind(){var b=document.getElementById('xlsxExportBtn');if(b)b.addEventListener('click',exportXlsx)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);else bind();
 })();
 </script>
 </body></html>
