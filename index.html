@@ -526,4 +526,61 @@ function render(){
  renderKpis(rows);renderTrend(rows);renderChannel(rows);renderCharts(rows);renderTable(rows)}
 render();
 loadGoogleSheet(false);
-</script></body></html>
+</script><style>
+.png-export-btn{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;white-space:nowrap}
+.png-export-btn svg{width:13px;height:13px}
+</style>
+<script>
+/* One-click PNG export for every Chart.js chart on the page */
+(function(){
+  function slug(t){return (t||'chart').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'chart'}
+  function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+  function exportCard(card,canvas){
+    var h3=card.querySelector('h3'),sub=card.querySelector('.sub');
+    var title=h3?h3.textContent.trim():'Chart';
+    var subtitle=sub?sub.textContent.trim():'';
+    var dpr=canvas.width/canvas.clientWidth||1;
+    var pad=Math.round(20*dpr),tSize=Math.round(18*dpr),sSize=Math.round(12*dpr);
+    var head=pad+tSize+(subtitle?Math.round(8*dpr)+sSize:0)+Math.round(14*dpr);
+    var out=document.createElement('canvas');
+    out.width=canvas.width+pad*2;
+    out.height=head+canvas.height+pad;
+    var ctx=out.getContext('2d');
+    ctx.fillStyle='#ffffff';ctx.fillRect(0,0,out.width,out.height);
+    ctx.textBaseline='top';
+    ctx.fillStyle='#023047';ctx.font='800 '+tSize+'px Satoshi, Arial, sans-serif';
+    ctx.fillText(title,pad,pad);
+    if(subtitle){ctx.fillStyle='#748198';ctx.font='500 '+sSize+'px Satoshi, Arial, sans-serif';ctx.fillText(subtitle,pad,pad+tSize+Math.round(8*dpr))}
+    ctx.drawImage(canvas,pad,head);
+    out.toBlob(function(blob){
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download=slug(title)+'_'+today()+'.png';
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(function(){URL.revokeObjectURL(a.href)},2000);
+    },'image/png');
+  }
+  function addButtons(){
+    document.querySelectorAll('.card').forEach(function(card){
+      var canvas=card.querySelector('.chartbox canvas, canvas');
+      if(!canvas||card.querySelector('.png-export-btn'))return;
+      var btn=document.createElement('button');
+      btn.type='button';btn.className='png-export-btn';btn.title='Download this chart as PNG';
+      btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>PNG';
+      btn.addEventListener('click',function(){
+        var chart=window.Chart&&Chart.getChart?Chart.getChart(canvas):null;
+        if(!chart){exportCard(card,canvas);return}
+        var prev=chart.options.devicePixelRatio;
+        chart.options.devicePixelRatio=Math.max(3,window.devicePixelRatio||1);
+        chart.resize();chart.update('none');
+        exportCard(card,canvas);
+        chart.options.devicePixelRatio=prev;chart.resize();chart.update('none');
+      });
+      var head=card.querySelector('.cardhead');
+      if(head)head.appendChild(btn);else card.insertBefore(btn,card.firstChild);
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',addButtons);else addButtons();
+})();
+</script>
+</body></html>
