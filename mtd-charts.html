@@ -67,7 +67,11 @@ header h1{margin:0;color:var(--navy);font-size:29px;letter-spacing:-.5px}
 .section.open .section-body{display:block}
 .chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .metric-card{border:1px solid var(--line);border-radius:13px;padding:13px;background:#fbfdfc}
-.metric-card h4{margin:0 0 8px;color:var(--navy);font-size:13px;font-weight:900}
+.metric-card h4{margin:0;color:var(--navy);font-size:13px;font-weight:900}
+.metric-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.png-btn{border:1px solid var(--mint);background:#fff;color:var(--navy);border-radius:8px;padding:4px 9px;font:700 10px Satoshi,Arial,sans-serif;cursor:pointer;white-space:nowrap}
+.png-btn:hover{background:var(--mint)}
+.png-btn:disabled{opacity:.55;cursor:default}
 .chart-wrap{height:250px;position:relative}
 .metric-note{font-size:10px;color:#8b9693;margin-top:7px}
 .empty-state{padding:30px;color:var(--muted);font-size:13px}
@@ -188,7 +192,32 @@ function periodMetric(period,channel,key){return metricValue(rowsForPeriod(perio
 function destroyAll(){Object.values(charts).forEach(c=>{try{c.destroy()}catch(e){}});charts={}}
 function niceScale(values){const finite=values.filter(v=>Number.isFinite(v));if(!finite.length)return{beginAtZero:true};const max=Math.max(...finite,0);return max===0?{beginAtZero:true,max:1}:{beginAtZero:true,suggestedMax:max*1.12}}
 function chartForMetric(canvasId,periods,channel,key){const el=document.getElementById(canvasId);if(!el||typeof Chart==='undefined')return;const labels=periods.map(p=>p.label),values=periods.map(p=>periodMetric(p,channel,key)),valid=values.filter(v=>v!==null&&Number.isFinite(v));if(!valid.length)return;charts[canvasId]=new Chart(el,{type:'bar',data:{labels,datasets:[{label:metricDefs.find(x=>x[0]===key)[1],data:values.map(v=>v==null?0:v),backgroundColor:'#cadfd8',borderColor:'#023047',borderWidth:1,borderRadius:7,maxBarThickness:62}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:250},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const raw=values[c.dataIndex];return`${metricDefs.find(x=>x[0]===key)[1]}: ${raw==null?'—':fmtMetric(key,raw)}`}}}},scales:{x:{grid:{display:false},ticks:{font:{family:'Satoshi, Arial, sans-serif',weight:'700'}}},y:{...niceScale(valid),grid:{color:'#e6ebed'},ticks:{font:{family:'Satoshi, Arial, sans-serif'},callback:v=>fmtMetric(key,v)}}}}})}
-function renderSections(){destroyAll();const periods=buildMTDPeriods(),sections=document.getElementById('sections');if(!periods.length){sections.innerHTML='<div class="empty-state">No dated data is available from <b>Sheet1</b>.</div>';updateRangeSummary([]);return}sections.innerHTML=sectionNames.map((section,si)=>`<section class="section" id="section-${si}"><div class="section-head" onclick="toggleSection(${si})"><div class="section-title"><span class="chevron">›</span><div><h3>${section}</h3><div class="section-meta">${periods[0].label} → ${periods[periods.length-1].label} • ${periods.length} monthly periods • MTD cutoff by day</div></div></div><button class="section-toggle" onclick="event.stopPropagation();toggleSection(${si})">Show</button></div><div class="section-body"><div class="chart-grid">${metricDefs.map((m,i)=>`<div class="metric-card"><h4>${m[1]}</h4><div class="chart-wrap"><canvas id="chart-${si}-${i}"></canvas></div><div class="metric-note">${m[0]==='cpAlpha'?'Cost ÷ Alpha':m[0]==='avgCreditlimit'?'Creditlimit ÷ Activations':m[0]==='cpcl'?'Cost ÷ Creditlimit':m[0]==='avgDisbursement'?'Disbursement ÷ Activations':m[0]==='cpd'?'Cost ÷ Disbursement':'MTD total from Sheet1'}</div></div>`).join('')}</div></div></section>`).join('');updateRangeSummary(periods)}
+function renderSections(){destroyAll();const periods=buildMTDPeriods(),sections=document.getElementById('sections');if(!periods.length){sections.innerHTML='<div class="empty-state">No dated data is available from <b>Sheet1</b>.</div>';updateRangeSummary([]);return}sections.innerHTML=sectionNames.map((section,si)=>`<section class="section" id="section-${si}"><div class="section-head" onclick="toggleSection(${si})"><div class="section-title"><span class="chevron">›</span><div><h3>${section}</h3><div class="section-meta">${periods[0].label} → ${periods[periods.length-1].label} • ${periods.length} monthly periods • MTD cutoff by day</div></div></div><button class="section-toggle" onclick="event.stopPropagation();toggleSection(${si})">Show</button></div><div class="section-body"><div class="chart-grid">${metricDefs.map((m,i)=>`<div class="metric-card"><div class="metric-head"><h4>${m[1]}</h4><button class="png-btn" onclick="downloadChartPNG(${si},${i},this)" title="Download this chart as PNG">↓ PNG</button></div><div class="chart-wrap"><canvas id="chart-${si}-${i}"></canvas></div><div class="metric-note">${m[0]==='cpAlpha'?'Cost ÷ Alpha':m[0]==='avgCreditlimit'?'Creditlimit ÷ Activations':m[0]==='cpcl'?'Cost ÷ Creditlimit':m[0]==='avgDisbursement'?'Disbursement ÷ Activations':m[0]==='cpd'?'Cost ÷ Disbursement':'MTD total from Sheet1'}</div></div>`).join('')}</div></div></section>`).join('');updateRangeSummary(periods)}
+function metricNoteText(key){return key==='cpAlpha'?'Cost ÷ Alpha':key==='avgCreditlimit'?'Creditlimit ÷ Activations':key==='cpcl'?'Cost ÷ Creditlimit':key==='avgDisbursement'?'Disbursement ÷ Activations':key==='cpd'?'Cost ÷ Disbursement':'MTD total from Sheet1'}
+function downloadChartPNG(si,mi,btn){
+  const id=`chart-${si}-${mi}`,ch=charts[id];
+  if(!ch){if(btn){const t=btn.textContent;btn.textContent='No data';btn.disabled=true;setTimeout(()=>{btn.textContent=t;btn.disabled=false},1500)}return}
+  const section=sectionNames[si],metric=metricDefs[mi][1],key=metricDefs[mi][0],periods=buildMTDPeriods();
+  const SCALE=3,oldDpr=ch.config.options.devicePixelRatio;
+  ch.config.options.devicePixelRatio=SCALE;ch.update('none');ch.resize();
+  const src=ch.canvas,s=src.width/ch.width;
+  const pad=22*s,headH=62*s,footH=34*s;
+  const out=document.createElement('canvas');out.width=Math.round(src.width+pad*2);out.height=Math.round(headH+src.height+footH);
+  const x=out.getContext('2d');
+  x.fillStyle='#ffffff';x.fillRect(0,0,out.width,out.height);
+  x.textBaseline='top';
+  x.fillStyle='#023047';x.font=`900 ${17*s}px Satoshi, Arial, sans-serif`;x.fillText(`${section} · ${metric}`,pad,18*s);
+  x.fillStyle='#748198';x.font=`500 ${11*s}px Satoshi, Arial, sans-serif`;
+  const range=periods.length?`${periods[0].label} → ${periods[periods.length-1].label} • L${selectedL}M • MTD cutoff: ${periods.map(periodRangeText).join(' | ')}`:'';
+  x.fillText(range,pad,41*s);
+  x.drawImage(src,pad,headH);
+  x.fillStyle='#8b9693';x.font=`500 ${10*s}px Satoshi, Arial, sans-serif`;
+  const today=new Date(),stamp=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  x.fillText(`${metricNoteText(key)} • Exported ${stamp} • Allo Bank MTD Charts`,pad,headH+src.height+12*s);
+  ch.config.options.devicePixelRatio=oldDpr;ch.update('none');ch.resize();
+  const name=`MTD_${section}_${metric.replace(/[^A-Za-z0-9]+/g,'-').replace(/-+$/,'')}_L${selectedL}M_${stamp}.png`;
+  out.toBlob(b=>{if(!b)return;const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)},'image/png');
+}
 function toggleSection(si){const el=document.getElementById('section-'+si);if(!el)return;const willOpen=!el.classList.contains('open');el.classList.toggle('open',willOpen);el.querySelector('.section-toggle').textContent=willOpen?'Hide':'Show';if(willOpen){const periods=buildMTDPeriods();metricDefs.forEach((m,i)=>chartForMetric(`chart-${si}-${i}`,periods,sectionNames[si],m[0]))}else{metricDefs.forEach((m,i)=>{const key=`chart-${si}-${i}`;if(charts[key]){charts[key].destroy();delete charts[key]}})}}
 function renderPresetButtons(){document.getElementById('mtdPresets').innerHTML=Array.from({length:10},(_,i)=>i+3).map(n=>`<button class="${n===selectedL?'active':''}" onclick="selectL(${n})">L${n}M</button>`).join('')}
 function selectL(n){selectedL=n;renderPresetButtons();renderSections();renderKpis()}
